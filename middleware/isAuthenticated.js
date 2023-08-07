@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-
+const User = require("../models/User.js")
 const isAuthenticated = async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
 
@@ -10,6 +10,9 @@ const isAuthenticated = async (req, res, next) => {
   try {
     const tokenInfo = jwt.verify(token, process.env.SECRET);
     req.user = tokenInfo;
+    const user = await User.findById(req.user._id)
+    delete user._doc.password
+    req.currentUser = user
     next();
   } catch (error) {
     console.log(error.message, "Error.message")

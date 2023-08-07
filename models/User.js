@@ -1,4 +1,4 @@
-const { Schema, model } = require('mongoose')
+const { Schema, model, Types } = require('mongoose')
 
 const userSchema = new Schema(
     {
@@ -14,6 +14,7 @@ const userSchema = new Schema(
 
         password: { type: String,
             required: true },
+        // likes:[ {type:Types.ObjectId, ref: "Post" }]
 
     },
 

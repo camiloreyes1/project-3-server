@@ -88,8 +88,13 @@ router.post('/delete-post/:postId', isAuthenticated, isOwner, (req,res,next) => 
 
 router.get('/addLike/:postId', isAuthenticated, (req, res, next) => {
 
+async (req,res) => {
+
+
     const { postId } = req.params
     const userId = req.user._id
+    console.log(req.currentUser)
+
 
     Post.findByIdAndUpdate(postId,
         {
@@ -110,6 +115,16 @@ router.get('/addLike/:postId', isAuthenticated, (req, res, next) => {
             console.log(err)
             next(err)
         })
+
+        if(userId.likes.includes(postId)){
+            const unlike = await User.findOneAndUpdate(   
+                {_id: userId},
+                {$pull: { likes: postId }},
+                { new: true, runValidators: true}
+            )
+        
+        }
+    }
 })
 
 router.get('/deleteLike/:postId', isAuthenticated, (req, res, next) => {
