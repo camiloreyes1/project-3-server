@@ -10,9 +10,7 @@ const isAuthenticated = async (req, res, next) => {
   try {
     const tokenInfo = jwt.verify(token, process.env.SECRET);
     req.user = tokenInfo;
-    const user = await User.findById(req.user._id)
-    delete user._doc.password
-    req.currentUser = user
+    console.log("USER======>", req.user)
     next();
   } catch (error) {
     console.log(error.message, "Error.message")

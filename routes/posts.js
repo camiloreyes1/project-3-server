@@ -86,46 +86,80 @@ router.post('/delete-post/:postId', isAuthenticated, isOwner, (req,res,next) => 
     })
 })
 
-router.get('/addLike/:postId', isAuthenticated, (req, res, next) => {
+router.get('/like-button/:postId', isAuthenticated, async (req, res, next) => {
 
-async (req,res) => {
+    try {
 
+        const { postId } = req.params
+        const userId = req.user._id
 
-    const { postId } = req.params
-    const userId = req.user._id
-    console.log(req.currentUser)
+        const thisPost = await Post.findById(postId)
 
+        let likesArray = thisPost.likes.map((like) => like.toString())
 
-    Post.findByIdAndUpdate(postId,
-        {
-            $push: { likes: userId }
-        },
-        {
-            new: true
-        })
-        .populate('owner likes')
-        .populate({
-            path: 'comments',
-            populate: { path: 'author' }
-        })
-        .then((likedPost) => {
-            res.json(likedPost)
-        })
-        .catch((err) => {
-            console.log(err)
-            next(err)
-        })
+        console.log("ARRAY", likesArray)
 
-        if(userId.likes.includes(postId)){
-            const unlike = await User.findOneAndUpdate(   
-                {_id: userId},
-                {$pull: { likes: postId }},
-                { new: true, runValidators: true}
-            )
-        
+        if (likesArray.includes(userId)) {
+            console.log("UNCLIKING")
+            let filtered = likesArray.filter((like) => like._id === userId)
+            thisPost.likes = filtered
+        } else {
+            likesArray.push(userId)
+            thisPost.likes = likesArray
         }
+
+        const toPopulate = await thisPost.save()
+        console.log("toPopulate", toPopulate)
+        const toPopulateAgain = await toPopulate.populate('owner likes')
+        const newPost = await toPopulateAgain.populate({path: 'comments', populate: { path: 'author' }})
+        
+        res.json(newPost)
+
+    } catch(err) {
+        console.log(err)
+        next(err)
     }
+
 })
+
+
+
+//     Post.findByIdAndUpdate(postId,
+//         {
+//             $push: { likes: userId }
+//         },
+//         {
+//             new: true
+//         })
+//         .populate('owner likes')
+//         .populate({
+//             path: 'comments',
+//             populate: { path: 'author' }
+//         })
+//         .then((likedPost) => {
+//             res.json(likedPost)
+//         })
+//         .catch((err) => {
+//             console.log(err)
+//             next(err)
+//         })
+
+//         if(userId.likes.includes(postId)){
+//             const unlike = await User.findOneAndUpdate(   
+//                 {_id: userId},
+//                 {$pull: { likes: postId }},
+//                 { new: true, runValidators: true}
+//             )
+
+//         const unlikePost = await Post.findByIdAndUpdate(
+//             {_id: postId},
+//             {$pull: { likes: userId._id} },
+//             { new: true, runValidators: true}
+//         )
+        
+//         }
+//     }
+// })
 
 router.get('/deleteLike/:postId', isAuthenticated, (req, res, next) => {
 
