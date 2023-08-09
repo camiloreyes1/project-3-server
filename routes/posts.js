@@ -3,32 +3,32 @@ var router = express.Router();
 
 const Post = require('../models/Post');
 const User = require('../models/User');
-const Comments = require ('../models/Comments')
+const Comments = require('../models/Comments')
 
 const isAuthenticated = require('../middleware/isAuthenticated');
 const isOwner = require('../middleware/isOwner');
 
-router.get('/', isAuthenticated, (req,res,next) => {
+router.get('/', isAuthenticated, (req, res, next) => {
     Post.find()
 
-    .populate('owner likes')
+        .populate('owner likes')
         .populate({
             path: 'comments',
             populate: { path: 'author' }
-    })
-    .then((allPosts) => {
-        res.json(allPosts)
-    })
+        })
+        .then((allPosts) => {
+            res.json(allPosts)
+        })
 
-    .catch((err) => {
-        console.log(err)
-        next(err)
-    })
+        .catch((err) => {
+            console.log(err)
+            next(err)
+        })
 })
 
-router.post('/new-post', isAuthenticated, (req,res,next) => {
+router.post('/new-post', isAuthenticated, (req, res, next) => {
 
-    const {owner, image, likes, caption} = req.body
+    const { owner, image, likes, caption } = req.body
 
     Post.create({
         owner: req.user._id,
@@ -36,18 +36,18 @@ router.post('/new-post', isAuthenticated, (req,res,next) => {
         likes,
         caption,
     })
-    .then((newPost) => {
-        res.json(newPost)
-    })
-    .catch((err) => {
-        console.log(err)
-        next(err)
-    })
+        .then((newPost) => {
+            res.json(newPost)
+        })
+        .catch((err) => {
+            console.log(err)
+            next(err)
+        })
 })
 
 router.post('/edit/:postId', isAuthenticated, isOwner, (req, res, next) => {
-    const {postId} = req.params
-    const {caption} = req.body
+    const { postId } = req.params
+    const { caption } = req.body
 
     Post.findByIdAndUpdate(
         postId,
@@ -55,7 +55,7 @@ router.post('/edit/:postId', isAuthenticated, isOwner, (req, res, next) => {
             caption
         },
         {
-            new:true
+            new: true
         })
         .populate('owner likes')
         .populate({
@@ -68,22 +68,22 @@ router.post('/edit/:postId', isAuthenticated, isOwner, (req, res, next) => {
         .catch((err) => {
             console.log(err)
             next(err)
-        })  
+        })
 })
 
-router.post('/delete-post/:postId', isAuthenticated, isOwner, (req,res,next) => {
+router.post('/delete-post/:postId', isAuthenticated, isOwner, (req, res, next) => {
 
-    const {postId} = req.params
+    const { postId } = req.params
 
-    Post.findOneAndDelete(postId)
-    .then((deletedPost) => {
-        res.json(deletedPost)
-    })
+    Post.findByIdAndDelete(postId)
+        .then((deletedPost) => {
+            res.json(deletedPost)
+        })
 
-    .catch((err) => {
-        console.log(err)
-        next(err)
-    })
+        .catch((err) => {
+            console.log(err)
+            next(err)
+        })
 })
 
 router.get('/like-button/:postId', isAuthenticated, async (req, res, next) => {
@@ -111,75 +111,50 @@ router.get('/like-button/:postId', isAuthenticated, async (req, res, next) => {
         const toPopulate = await thisPost.save()
         console.log("toPopulate", toPopulate)
         const toPopulateAgain = await toPopulate.populate('owner likes')
-        const newPost = await toPopulateAgain.populate({path: 'comments', populate: { path: 'author' }})
-        
+        const newPost = await toPopulateAgain.populate({ path: 'comments', populate: { path: 'author' } })
+
         res.json(newPost)
 
-    } catch(err) {
+    } catch (err) {
         console.log(err)
         next(err)
     }
 
 })
 
-
-
-//     Post.findByIdAndUpdate(postId,
-//         {
-//             $push: { likes: userId }
-//         },
-//         {
-//             new: true
-//         })
-//         .populate('owner likes')
-//         .populate({
-//             path: 'comments',
-//             populate: { path: 'author' }
-//         })
-//         .then((likedPost) => {
-//             res.json(likedPost)
-//         })
-//         .catch((err) => {
-//             console.log(err)
-//             next(err)
-//         })
-
-//         if(userId.likes.includes(postId)){
-//             const unlike = await User.findOneAndUpdate(   
-//                 {_id: userId},
-//                 {$pull: { likes: postId }},
-//                 { new: true, runValidators: true}
-//             )
-
-//         const unlikePost = await Post.findByIdAndUpdate(
-//             {_id: postId},
-//             {$pull: { likes: userId._id} },
-//             { new: true, runValidators: true}
-//         )
-        
-//         }
-//     }
-// })
-
-router.get('/deleteLike/:postId', isAuthenticated, (req, res, next) => {
+router.get('/post-details/:postId', isAuthenticated, (req, res, next) => {
 
     const { postId } = req.params
-    const userId = req.user._id
 
-    Post.findByIdAndUpdate(postId,
-        {
-            $pull: { likes: userId }
-        },
-        {
-            new: true
+    Post.findById(postId)
+        .populate('owner')
+        .then((yourPost) => {
+            console.log("Post: ", yourPost)
+            res.json(yourPost)
         })
-        .populate('owner likes')
-        .populate({
-            path: 'comments',
-            populate: { path: 'author' }
+        .catch((err) => {
+            console.log(err)
+            next(err)
         })
-        .then((likedPost) => {
-            res.json(likedPost)
+
+})
+
+router.get('/profile/:userId', isAuthenticated, (req, res, next) => {
+   
+        const { userId } = req.params
+
+        User.findById(userId)
+        .then((foundUser) => {
+            Post.find({
+                owner: foundUser._id
+            })
+            .then((foundPosts) => {
+                res.json({ foundUser, foundPosts })
+            })
+            .catch((err) => {
+                console.log(err)
+                next(err)
+            })
         })
         .catch((err) => {
             console.log(err)
@@ -187,22 +162,45 @@ router.get('/deleteLike/:postId', isAuthenticated, (req, res, next) => {
         })
 })
 
-router.get('/post-details/:postId', isAuthenticated, (req, res, next) => {
+router.post('/add-comment/:postId', isAuthenticated, (req, res, next) => {
 
-    const {postId} = req.params
-    
-    Post.findById(postId) 
-    .populate('owner') 
-    .then((yourPost) => {
-        console.log("Post: ", yourPost)
-        res.json(yourPost)
+    Comments.create({
+        author: req.user._id,
+        comment: req.body.comment
     })
-    .catch((err) => {
-        console.log(err)
-        next(err)
-    })
-    
+        .then((createdComment) => {
+
+            Post.findByIdAndUpdate(
+                req.params.postId,
+                {
+                    $push: {comments: createdComment._id}
+                },
+                {new: true}
+            )
+            .populate('owner')
+            .populate({
+                path: 'comments',
+                populate: { path: 'author'}
+            })
+            .then((updatedPost) => {
+                console.log("Updated post")
+                res.json(updatedPost)
+            })
+            .catch((err) => {
+                console.log(err)
+                next(err)
+            })
+
+        })
+        .catch((err) => {
+            console.log(err)
+            next(err)
+        })
 
 })
 
+
 module.exports = router;
+
+
+
